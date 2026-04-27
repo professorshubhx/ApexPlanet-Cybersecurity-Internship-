@@ -1,5 +1,5 @@
 
-# 🛡️ Day 01 — Cybersecurity Basics
+# Day 01 — Cybersecurity Basics
 ### ApexPlanet Internship | Task 1: Foundation & Environment Setup
 **Timeline:** Days 1–12 | **Author:** Professorshubhx
 
@@ -11,7 +11,7 @@ Before you touch any tool or terminal, you need to understand *why* cybersecurit
 
 ---
 
-## 1. 🔐 The CIA Triad — The Heart of Cybersecurity
+## 1.  The CIA Triad — The Heart of Cybersecurity
 
 If someone asks you "what is cybersecurity actually about?" — the answer is three words: **Confidentiality, Integrity, Availability**. These three things are what every attack tries to break and every defense tries to protect.
 
@@ -68,7 +68,7 @@ Availability means systems and data are accessible to authorized users when they
 
 ---
 
-### 🧠 Quick Memory Trick for CIA Triad:
+###  Quick Memory Trick for CIA Triad:
 
 ```
 C → Can others see it?         (Confidentiality)
@@ -78,13 +78,13 @@ A → Is the system working?     (Availability)
 
 ---
 
-## 2. ⚠️ Threat Types — What Attackers Actually Do
+## 2.  Threat Types — What Attackers Actually Do
 
 Now let's talk about *how* attackers break the CIA Triad. These are the most common threats you'll deal with as a cybersecurity professional.
 
 ---
 
-### 🎣 Phishing
+###  Phishing
 
 Phishing is basically digital deception. The attacker pretends to be someone you trust — your bank, your boss, Google — to trick you into giving up sensitive info or clicking a malicious link.
 
@@ -103,7 +103,7 @@ It's the #1 attack vector in the world. Why? Because it's cheap, scalable, and i
 
 ---
 
-### 🦠 Malware
+###  Malware
 
 Malware = **Mal**icious Soft**ware**. It's an umbrella term for any software designed to harm, spy on, or take control of a system.
 
@@ -121,7 +121,7 @@ Malware = **Mal**icious Soft**ware**. It's an umbrella term for any software des
 
 ---
 
-### 💥 DDoS — Distributed Denial of Service
+###  DDoS — Distributed Denial of Service
 
 Imagine thousands of people all trying to enter a single-door shop at the same time. Nobody gets in. That's DDoS.
 
@@ -135,7 +135,7 @@ Attackers use a **botnet** (army of infected computers) to flood a target server
 
 ---
 
-### 💉 SQL Injection
+###  SQL Injection
 
 If a web app doesn't properly filter user input, an attacker can inject SQL code into a login form or search box to manipulate the database directly.
 
@@ -154,7 +154,7 @@ This is why input validation and parameterized queries matter so much.
 
 ---
 
-### 🔨 Brute Force
+###  Brute Force
 
 It's exactly what it sounds like — trying every possible password combination until one works.
 
@@ -167,7 +167,7 @@ It's exactly what it sounds like — trying every possible password combination 
 
 ---
 
-### 🔒 Ransomware
+###  Ransomware
 
 Ransomware is malware that encrypts all your files, then demands payment (usually in crypto) to give you the decryption key.
 
@@ -180,13 +180,13 @@ Ransomware is malware that encrypts all your files, then demands payment (usuall
 
 ---
 
-## 3. 🚪 Attack Vectors — How Attackers Get In
+## 3.  Attack Vectors — How Attackers Get In
 
 An **attack vector** is the *path or method* an attacker uses to gain unauthorized access. Knowing these helps you think from an attacker's perspective (which is literally what a SOC analyst needs to do).
 
 ---
 
-### 🧠 Social Engineering
+###  Social Engineering
 
 This isn't hacking machines — it's hacking *humans*. Social engineering exploits trust, fear, authority, and urgency to manipulate people into doing something they shouldn't.
 
@@ -218,7 +218,7 @@ Wi-Fi is a huge attack surface, especially on public or poorly configured networ
 
 ---
 
-### 🏢 Insider Threats
+### Insider Threats
 
 Not all attacks come from outside. Sometimes the danger is already inside the building.
 
@@ -233,7 +233,7 @@ Not all attacks come from outside. Sometimes the danger is already inside the bu
 
 ---
 
-## 📊 Quick Reference Summary
+##  Quick Reference Summary
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -251,7 +251,7 @@ Not all attacks come from outside. Sometimes the danger is already inside the bu
 
 ---
 
-## 🧪 Self-Check Questions
+##  Self-Check Questions
 
 Test yourself before moving to Day 2:
 
@@ -274,8 +274,8 @@ Test yourself before moving to Day 2:
 
 ## 🔗 Connect With Me
 
-- 📺 YouTube: [@Professorshubhx](https://youtube.com/@Professorshubhx)
-- 💼 LinkedIn: [Professorshubhx](https://linkedin.com/in/Professorshubhx)
+- 📺 GitHub: [@professorshubhx](https://tryhackme.com/p/professorshubhx)
+- 💼 LinkedIn: [Shubham Chaurasiya](https://www.linkedin.com/in/shubham-chaurasiya-60932a359/)
 - 🎓 Learning at: Defronix Cybersecurity Academy
 
 ---
