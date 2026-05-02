@@ -1,6 +1,6 @@
 # Linux Cheatsheet
 ### ApexPlanet Internship — Task 1 Deliverable
-**Author:** Professorshubhx | Defronix Cybersecurity Academy
+**Author:** Professorshubhx
 
 ---
 
