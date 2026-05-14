@@ -26,7 +26,7 @@
 | Phase | Command | Duration | Output File |
 |-------|---------|----------|-------------|
 | Phase 1 — Full Port Discovery | `nmap -p- --min-rate 5000` | 39.43 seconds | open-ports.txt |
-| Phase 2 — Deep Scan (version + scripts + OS) | `nmap -sV -sC -O -p [ports]` | 22.73 seconds | metasploitable-deep-scan.nmap |
+| Phase 2 — Deep Scan (version + scripts + OS) | `nmap -sV -sC -O -p [ports]` | 196.36 seconds | metasploitable-deep-scan.nmap |
 | Phase 3 — Vulnerability Scripts | `nmap --script vuln` | 522.97 seconds | vuln-scan.txt |
 
 ---
