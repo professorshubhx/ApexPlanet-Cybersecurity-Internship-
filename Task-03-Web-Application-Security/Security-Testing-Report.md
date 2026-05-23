@@ -47,8 +47,8 @@ to your MySQL server version for the right syntax to use near ''''' at line 1
 
 The application passes user input directly into the SQL query without sanitization. Vulnerability confirmed.
 
-**Screenshot:** `screenshots/MySQLerror.png` — MySQL error on single quote input
-**Screenshot:** `screenshots/confirmMySQLerror.png` — Normal response with id=1 (admin/admin)
+**Screenshot:** ![MySQL Error](./screenshots/MySQLerror.png) — MySQL error on single quote input
+**Screenshot:** ![Normal Response](./screenshots/confirmMySQLerror.png) — Normal response with id=1 (admin/admin)
 
 ---
 
@@ -67,7 +67,7 @@ Surname: dvwa
 
 Database is running as `root@localhost` — the highest privilege MySQL user. Current database name is `dvwa`.
 
-**Screenshot:** `screenshots/union_attack_database.png`
+**Screenshot:** ![Union Attack Database Extraction](./screenshots/union_attack_database.png)
 
 ---
 
@@ -84,7 +84,7 @@ guestbook
 users
 ```
 
-**Screenshot:** `screenshots/table_names_extract.png`
+**Screenshot:** ![Table Enumeration](./screenshots/table_names_extract.png)
 
 ---
 
@@ -107,7 +107,7 @@ users
 
 Complete user database extracted including all password hashes.
 
-**Screenshot:** `screenshots/hashed_table_passwords.png`
+**Screenshot:** ![Extracted Password Hashes](./screenshots/hashed_table_passwords.png)
 
 ---
 
@@ -156,7 +156,7 @@ Security Level: Low
 
 **Result:** JavaScript alert popup appeared — `XSS by Professorshubhx` — triggered from 192.168.56.104. The script is now stored in the database and will execute for every user who visits the guestbook page.
 
-**Screenshot:** `screenshots/XSS_script.png` — Alert popup showing "XSS by Professorshubhx"
+**Screenshot:** ![Stored XSS Payload Execution](./screenshots/XSS_script.png) — Alert popup showing "XSS by Professorshubhx"
 
 ---
 
@@ -183,7 +183,7 @@ http://192.168.56.104/dvwa/vulnerabilities/xss_r/?name=<img src%3Dx onerror%3Dal
 
 **Result:** The page reflected the payload unescaped: `Hello <img src=x onerror=alert('Reflected XSS')>` — demonstrating that the filter blocked `<script>` tags but not event handler attributes on other HTML tags.
 
-**Screenshot:** `screenshots/reflected_XSS.png`
+**Screenshot:** ![Reflected XSS Alert](./screenshots/reflected_XSS.png)
 
 ---
 
@@ -231,18 +231,18 @@ GET /dvwa/vulnerabilities/csrf/?password_new=admin&password_conf=admin&Change=Ch
 Cookie: security=low; PHPSESSID=da650c268e7863ccef13fb37ab65ccf8
 ```
 
-**Screenshot:** `screenshots/Get_request_intercept.png` — Burp Suite showing the intercepted GET request
+**Screenshot:** ![CSRF GET Request Intercepted in Burp Suite](./screenshots/Get_request_intercept.png) — Burp Suite showing the intercepted GET request
 
 **Step 2:** Created a malicious HTML page hosted on the attacker machine (`192.168.172.200/csrf.html`) with a hidden form and a "Free Gift" social engineering link.
 
-**Screenshot:** `screenshots/attacker_ip_csrf.png` — CSRF attack page at 192.168.172.200/csrf.html
+**Screenshot:** ![CSRF Attack Page Hosted on Attacker System](./screenshots/attacker_ip_csrf.png) — CSRF attack page at 192.168.172.200/csrf.html
 
 **Step 3:** While logged into DVWA as admin, visited the attacker page and clicked the link.
 
 **Result:** DVWA displayed "Password Changed" — the admin password was silently changed via the forged request using the victim's active session cookie.
 
-**Screenshot:** `screenshots/CSRF_password.png` — Burp showing the forged GET request being sent
-**Screenshot:** `screenshots/password_change.png` — DVWA confirming "Password Changed"
+**Screenshot:** ![Successful CSRF Password Change](./screenshots/CSRF_password.png) — Burp showing the forged GET request being sent
+**Screenshot:** ![Password Successfully Changed via CSRF Attack](./screenshots/password_change.png) — DVWA confirming "Password Changed"
 
 ---
 
@@ -293,7 +293,7 @@ Security Level: Low
 
 **Result:** Full contents of `/etc/passwd` displayed — revealing all system users including `msfadmin`, `root`, service accounts, and their home directories and shells.
 
-**Screenshot:** `screenshots/input_directly_include.png` — /etc/passwd contents displayed
+**Screenshot:** ![Direct File Inclusion via User Input](./screenshots/input_directly_include.png) — /etc/passwd contents displayed
 
 ---
 
@@ -304,7 +304,7 @@ Security Level: Low
 
 **Result:** DVWA config file included — page renders but PHP warnings appear revealing the file path `/var/www/dvwa/config/config.inc.php`.
 
-**Screenshot:** `screenshots/config_inc_php.png`
+**Screenshot:** ![Database Configuration File Disclosure](./screenshots/config_inc_php.png)
 
 ---
 
@@ -334,9 +334,13 @@ Database credentials extracted via LFI + PHP filter wrapper:
 - Database: dvwa
 - Username: root
 - Password: (empty)
+### php://filter Wrapper Base64 Output
 
-**Screenshot:** `screenshots/php_filter_wrapper.png` — base64 output in browser
-**Screenshot:** `screenshots/encoded_base64_DB.png` — terminal showing base64 decode command and decoded PHP config
+![Base64 Encoded Output](./screenshots/php_filter_wrapper.png)
+
+### Decoded Database Configuration
+
+![Decoded PHP Config](./screenshots/encoded_base64_DB.png)
 
 ---
 
@@ -391,13 +395,21 @@ POST /dvwa/login.php
 username=admin&password=admin&Login=Login
 ```
 
-**Screenshot:** `screenshots/Get_request_intercept.png` — Burp Proxy showing intercepted login request with `username=admin&password=admin&Login=Login`
+### Intercepted Login Request in Burp Suite
+
+![Burp Intercepted POST Request](./screenshots/Get_request_intercept.png)
+
+The screenshot shows Burp Suite intercepting the HTTP login request containing the parameters `username=admin&password=admin&Login=Login`.
 
 Sent to Intruder → Sniper attack → marked `password` parameter as payload position → loaded wordlist with common passwords.
 
 ### Results
 
-**Screenshot:** `screenshots/successfull_pass.png` — Intruder results table
+### Burp Intruder Attack Results
+
+![Successful Password Detection in Burp Intruder](./screenshots/successfull_pass.png)
+
+The Intruder results table shows multiple password attempts, where the successful login attempt returned a different HTTP response status (`302 Found`), indicating successful authentication.
 
 | Request | Payload | Status | Length |
 |---------|---------|--------|--------|
@@ -460,7 +472,11 @@ Set-Cookie: security=high
 - `Server: Apache/2.2.8` — reveals outdated Apache version
 - `X-Powered-By: PHP/5.2.4` — reveals PHP version
 
-**Screenshot:** `screenshots/header_before.png`
+### HTTP Headers Before Security Hardening
+
+![Missing Security Headers](./screenshots/header_before.png)
+
+The response headers initially lacked important security protections such as `X-Frame-Options` and `X-Content-Type-Options`.
 
 ---
 
@@ -481,7 +497,11 @@ X-Frame-Options: SAMEORIGIN
 X-Content-Type-Options: nosniff
 ```
 
-**Screenshot:** `screenshots/after_edit_apache2.png`
+### Apache Configuration After Adding Security Headers
+
+![Apache Security Header Configuration](./screenshots/after_edit_apache2.png)
+
+The Apache configuration file was updated to include additional HTTP security headers such as `X-Frame-Options` and `X-Content-Type-Options`.
 
 ---
 
@@ -498,9 +518,17 @@ Scanned `github.com` on securityheaders.com — **Grade: A**
 
 **Missing:**
 - Permissions-Policy
+### SecurityHeaders.com Scan Result
 
-**Screenshot:** `screenshots/public_website.png` — securityheaders.com grade A for github.com
-**Screenshot:** `screenshots/security_score_github.png` — full header details including CSP policy
+![SecurityHeaders.com Grade A Result](./screenshots/public_website.png)
+
+The public website scan demonstrated strong HTTP security header implementation and received a high security grade.
+
+### Detailed Security Header Analysis
+
+![Detailed Header Configuration and CSP Policy](./screenshots/security_score_github.png)
+
+The report includes detailed header analysis, including Content Security Policy (CSP), HSTS, X-Frame-Options, and other browser security protections.
 
 ---
 
@@ -553,26 +581,26 @@ Scanned `github.com` on securityheaders.com — **Grade: A**
 
 | File | Vulnerability | Description |
 |------|--------------|-------------|
-| MySQLerror.png | SQLi | MySQL syntax error on single quote input |
-| confirmMySQLerror.png | SQLi | Normal response with id=1 |
-| union_attack_database.png | SQLi | UNION attack returning root@localhost and dvwa |
-| table_names_extract.png | SQLi | Tables: guestbook and users |
-| hashed_table_passwords.png | SQLi | All 5 users with MD5 hashes |
-| XSS_script.png | Stored XSS | Alert popup "XSS by Professorshubhx" |
-| reflected_XSS.png | Reflected XSS | img onerror payload in URL, reflected in page |
-| Get_request_intercept.png | CSRF + Burp | Burp intercepted GET and POST requests |
-| attacker_ip_csrf.png | CSRF | Attack page at 192.168.172.200/csrf.html |
-| CSRF_password.png | CSRF | Forged GET request in Burp |
-| password_change.png | CSRF | DVWA showing "Password Changed" |
-| input_directly_include.png | LFI | /etc/passwd contents in browser |
-| config_inc_php.png | LFI | config.inc.php included via path traversal |
-| php_filter_wrapper.png | LFI | Base64 output from php://filter wrapper |
-| encoded_base64_DB.png | LFI | Terminal showing decoded DB credentials |
-| successfull_pass.png | Brute Force | Intruder results — all 302, length difference |
-| header_before.png | Headers | curl output — no security headers |
-| after_edit_apache2.png | Headers | curl output — X-Frame-Options and nosniff added |
-| public_website.png | Headers | securityheaders.com — github.com grade A |
-| security_score_github.png | Headers | Full github.com header details |
+| [MySQLerror.png](./screenshots/MySQLerror.png) | SQLi | MySQL syntax error on single quote input |
+| [confirmMySQLerror.png](./screenshots/confirmMySQLerror.png) | SQLi | Normal response with id=1 |
+| [union_attack_database.png](./screenshots/union_attack_database.png) | SQLi | UNION attack returning root@localhost and dvwa |
+| [table_names_extract.png](./screenshots/table_names_extract.png) | SQLi | Tables: guestbook and users |
+| [hashed_table_passwords.png](./screenshots/hashed_table_passwords.png) | SQLi | All 5 users with MD5 hashes |
+| [XSS_script.png](./screenshots/XSS_script.png) | Stored XSS | Alert popup "XSS by Professorshubhx" |
+| [reflected_XSS.png](./screenshots/reflected_XSS.png) | Reflected XSS | img onerror payload in URL, reflected in page |
+| [Get_request_intercept.png](./screenshots/Get_request_intercept.png) | CSRF + Burp | Burp intercepted GET and POST requests |
+| [attacker_ip_csrf.png](./screenshots/attacker_ip_csrf.png) | CSRF | Attack page at 192.168.172.200/csrf.html |
+| [CSRF_password.png](./screenshots/CSRF_password.png) | CSRF | Forged GET request in Burp |
+| [password_change.png](./screenshots/password_change.png) | CSRF | DVWA showing "Password Changed" |
+| [input_directly_include.png](./screenshots/input_directly_include.png) | LFI | /etc/passwd contents in browser |
+| [config_inc_php.png](./screenshots/config_inc_php.png) | LFI | config.inc.php included via path traversal |
+| [php_filter_wrapper.png](./screenshots/php_filter_wrapper.png) | LFI | Base64 output from php://filter wrapper |
+| [encoded_base64_DB.png](./screenshots/encoded_base64_DB.png) | LFI | Terminal showing decoded DB credentials |
+| [successfull_pass.png](./screenshots/successfull_pass.png) | Brute Force | Intruder results — all 302, length difference |
+| [header_before.png](./screenshots/header_before.png) | Headers | curl output — no security headers |
+| [after_edit_apache2.png](./screenshots/after_edit_apache2.png) | Headers | curl output — X-Frame-Options and nosniff added |
+| [public_website.png](./screenshots/public_website.png) | Headers | securityheaders.com — github.com grade A |
+| [security_score_github.png](./screenshots/security_score_github.png) | Headers | Full github.com header details |
 
 ---
 
