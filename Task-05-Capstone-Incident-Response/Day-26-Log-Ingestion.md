@@ -6,486 +6,524 @@
 
 ## What We're Doing Today
 
-Yesterday we installed the ELK Stack. Today we focus on actually getting logs into Elasticsearch — configuring Logstash pipelines properly, generating real attack traffic to create meaningful log data, verifying data is flowing, and setting up index patterns in Kibana so we can search and visualize.
+Yesterday we installed the ELK Stack. Today we get logs into Elasticsearch. This file is updated specifically for **Kali Linux** — commands are tested and working on Kali.
 
-By the end of today, Kibana's Discover tab should show real log events from our lab.
-
----
-
-## Log Ingestion Architecture Recap
-
-```
-Attack Activity          Log Files              Logstash          Elasticsearch
-───────────────          ─────────              ────────          ─────────────
-Hydra SSH brute ──► /var/log/auth.log ──► auth-log.conf  ──► logs-auth-*
-Apache web reqs ──► /var/log/apache2/ ──► apache-log.conf──► logs-apache-*
-Nmap scan       ──► nmap-output.xml   ──► nmap-log.conf  ──► logs-nmap-*
-System events   ──► /var/log/syslog   ──► beats-input    ──► logs-system-*
-```
+**Important note about Kali Linux:**
+- Kali does NOT have `/var/log/auth.log` by default — needs rsyslog setup
+- Apache logs are on Kali itself (localhost), not Metasploitable2
+- We use Kali's own Apache for web attack log generation
 
 ---
 
-## Step 1 — Verify All Services Running
+## Log Flow Architecture
+
+```
+Kali Linux
+├── /var/log/auth.log      ──► Logstash auth-log.conf  ──► logs-auth-*
+├── /var/log/apache2/      ──► Logstash apache-log.conf──► logs-apache-*
+└── /root/nmap-*.xml       ──► Logstash nmap-log.conf  ──► logs-nmap-*
+                                        │
+                                        ▼
+                               Elasticsearch :9200
+                                        │
+                                        ▼
+                                  Kibana :5601
+```
+
+---
+
+## Step 1 — Fix auth.log on Kali
+
+Kali Linux uses `journald` by default — `auth.log` does not exist until rsyslog is configured.
 
 ```bash
-# Check all four services
-sudo systemctl status elasticsearch --no-pager
-sudo systemctl status logstash --no-pager
-sudo systemctl status kibana --no-pager
-sudo systemctl status filebeat --no-pager
+# Step 1a: Install rsyslog
+sudo apt install rsyslog -y
 
-# Quick one-liner status check
+# Step 1b: Enable auth logging
+sudo bash -c 'echo "auth,authpriv.*    /var/log/auth.log" > /etc/rsyslog.d/auth.conf'
+
+# Step 1c: Start rsyslog
+sudo systemctl enable rsyslog
+sudo systemctl restart rsyslog
+
+# Step 1d: Create the file with correct permissions
+sudo touch /var/log/auth.log
+sudo chmod 640 /var/log/auth.log
+sudo chown root:adm /var/log/auth.log
+
+# Step 1e: Verify file exists
+ls -la /var/log/auth.log
+```
+
+---
+
+## Step 2 — Generate auth.log Entries
+
+```bash
+# Method A: SSH failed attempts to localhost
+for i in {1..15}; do
+  ssh wronguser@127.0.0.1 \
+    -o StrictHostKeyChecking=no \
+    -o BatchMode=yes \
+    -o ConnectTimeout=3 2>/dev/null
+  sleep 0.5
+done
+
+# Method B: SSH failed attempts to Metasploitable2
+# (these show in Kali's auth.log as outbound, and Metasploitable's as inbound)
+for i in {1..10}; do
+  ssh wronguser@192.168.56.104 \
+    -o StrictHostKeyChecking=no \
+    -o BatchMode=yes \
+    -o ConnectTimeout=3 2>/dev/null
+  sleep 0.5
+done
+
+# Method C: Direct inject (fastest, always works)
+sudo bash -c 'cat >> /var/log/auth.log << EOF
+Jun  7 10:00:01 kali sshd[1001]: Failed password for msfadmin from 192.168.56.101 port 45001 ssh2
+Jun  7 10:00:02 kali sshd[1002]: Failed password for root from 192.168.56.101 port 45002 ssh2
+Jun  7 10:00:03 kali sshd[1003]: Failed password for admin from 192.168.56.101 port 45003 ssh2
+Jun  7 10:00:04 kali sshd[1004]: Failed password for msfadmin from 192.168.56.101 port 45004 ssh2
+Jun  7 10:00:05 kali sshd[1005]: Failed password for user from 192.168.56.101 port 45005 ssh2
+Jun  7 10:00:06 kali sshd[1006]: Accepted password for msfadmin from 192.168.56.101 port 45006 ssh2
+Jun  7 10:00:07 kali sshd[1007]: Failed password for msfadmin from 192.168.56.101 port 45007 ssh2
+Jun  7 10:00:08 kali sshd[1008]: Failed password for root from 192.168.56.101 port 45008 ssh2
+Jun  7 10:00:09 kali sshd[1009]: Failed password for admin from 192.168.56.101 port 45009 ssh2
+Jun  7 10:00:10 kali sshd[1010]: Failed password for msfadmin from 192.168.56.101 port 45010 ssh2
+EOF'
+
+# Verify entries exist
+sudo tail -10 /var/log/auth.log
+```
+
+---
+
+## Step 3 — Fix Apache on Kali and Generate Web Logs
+
+Web attack logs come from **Kali's own Apache** — not Metasploitable2.
+
+```bash
+# Step 3a: Make sure Apache is running on Kali
+sudo apt install apache2 -y
+sudo systemctl start apache2
+sudo systemctl enable apache2
+
+# Step 3b: Verify Apache is running
+sudo systemctl status apache2 --no-pager
+curl -s http://localhost/ | head -3
+
+# Step 3c: Check log file exists
+ls -la /var/log/apache2/
+
+# Step 3d: Generate normal web traffic to Kali's Apache
+curl http://localhost/
+curl http://localhost/index.html
+curl http://localhost/nonexistent-page
+
+# Step 3e: Generate SQL injection attack logs
+curl "http://localhost/?id=1+UNION+SELECT+user(),database()--"
+curl "http://localhost/?id=1+OR+1=1--"
+curl "http://localhost/?search=SELECT+*+FROM+users"
+curl "http://localhost/?id=1'+ORDER+BY+2--+-"
+curl "http://localhost/?input=DROP+TABLE+users"
+
+# Step 3f: Generate XSS attack logs
+curl "http://localhost/?name=<script>alert(1)</script>"
+curl "http://localhost/?q=<img+src=x+onerror=alert(1)>"
+
+# Step 3g: Generate path traversal logs
+curl "http://localhost/?page=../../etc/passwd"
+curl "http://localhost/?file=../../../etc/shadow"
+curl "http://localhost/../../../../etc/passwd"
+
+# Step 3h: Generate scanner simulation logs
+curl -A "Nikto/2.1.6" http://localhost/
+curl -A "sqlmap/1.7.0" http://localhost/
+curl -A "Nmap Scripting Engine" http://localhost/
+curl -A "masscan/1.3" http://localhost/
+
+# Step 3i: Verify Apache logs
+sudo tail -20 /var/log/apache2/access.log
+```
+
+---
+
+## Step 4 — Fix Logstash Config for Kali
+
+Update auth-log.conf to work correctly on Kali:
+
+```bash
+sudo nano /etc/logstash/conf.d/auth-log.conf
+```
+
+Replace entire content with:
+
+```ruby
+input {
+  file {
+    path => "/var/log/auth.log"
+    start_position => "beginning"
+    sincedb_path => "/dev/null"
+    type => "auth"
+    tags => ["auth", "ssh"]
+  }
+}
+
+filter {
+  if [type] == "auth" {
+    grok {
+      match => {
+        "message" => "%{SYSLOGTIMESTAMP:timestamp} %{HOSTNAME:hostname} %{WORD:program}(?:\[%{POSINT:pid}\])?: %{GREEDYDATA:log_message}"
+      }
+      overwrite => ["message"]
+    }
+
+    if "Failed password" in [log_message] {
+      grok {
+        match => {
+          "log_message" => "Failed password for (?:invalid user )?%{USERNAME:failed_user} from %{IP:src_ip} port %{INT:src_port}"
+        }
+      }
+      mutate {
+        add_field => { "event_type" => "ssh_failed_login" }
+        add_field => { "severity" => "high" }
+      }
+    }
+
+    if "Accepted" in [log_message] {
+      grok {
+        match => {
+          "log_message" => "Accepted %{WORD:auth_method} for %{USERNAME:success_user} from %{IP:src_ip} port %{INT:src_port}"
+        }
+      }
+      mutate {
+        add_field => { "event_type" => "ssh_successful_login" }
+        add_field => { "severity" => "info" }
+      }
+    }
+
+    date {
+      match => [ "timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+      target => "@timestamp"
+    }
+  }
+}
+
+output {
+  if [type] == "auth" {
+    elasticsearch {
+      hosts => ["http://localhost:9200"]
+      index => "logs-auth-%{+YYYY.MM.dd}"
+    }
+  }
+}
+```
+
+Update apache-log.conf:
+
+```bash
+sudo nano /etc/logstash/conf.d/apache-log.conf
+```
+
+Replace with:
+
+```ruby
+input {
+  file {
+    path => "/var/log/apache2/access.log"
+    start_position => "beginning"
+    sincedb_path => "/dev/null"
+    type => "apache"
+    tags => ["apache", "web"]
+  }
+}
+
+filter {
+  if [type] == "apache" {
+    grok {
+      match => { "message" => "%{COMBINEDAPACHELOG}" }
+    }
+
+    mutate {
+      convert => {
+        "response" => "integer"
+        "bytes" => "integer"
+      }
+    }
+
+    if [request] =~ /(?i)(union|select|insert|drop|delete|update|script|alert)/ {
+      mutate {
+        add_field => { "attack_type" => "possible_sqli_xss" }
+        add_field => { "severity" => "high" }
+        add_tag => ["attack"]
+      }
+    }
+
+    if [request] =~ /\.\.\// {
+      mutate {
+        add_field => { "attack_type" => "path_traversal" }
+        add_field => { "severity" => "high" }
+        add_tag => ["attack"]
+      }
+    }
+
+    if [agent] =~ /(?i)(nikto|sqlmap|nmap|masscan|dirbuster|gobuster)/ {
+      mutate {
+        add_field => { "attack_type" => "scanner_detected" }
+        add_field => { "severity" => "medium" }
+        add_tag => ["scanner"]
+      }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+      target => "@timestamp"
+    }
+  }
+}
+
+output {
+  if [type] == "apache" {
+    elasticsearch {
+      hosts => ["http://localhost:9200"]
+      index => "logs-apache-%{+YYYY.MM.dd}"
+    }
+  }
+}
+```
+
+---
+
+## Step 5 — Fix Filebeat Config for Kali
+
+```bash
+sudo nano /etc/filebeat/filebeat.yml
+```
+
+Replace entire content with this clean config:
+
+```yaml
+filebeat.inputs:
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/auth.log
+  tags: ["auth", "syslog"]
+  fields:
+    log_type: auth
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/apache2/access.log
+  tags: ["apache", "web"]
+  fields:
+    log_type: apache
+
+output.logstash:
+  hosts: ["localhost:5044"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+```
+
+---
+
+## Step 6 — Restart All Services in Correct Order
+
+```bash
+# Always restart in this order
+echo "Restarting Elasticsearch..."
+sudo systemctl restart elasticsearch
+sleep 30
+
+echo "Restarting Logstash..."
+sudo systemctl restart logstash
+sleep 45
+
+echo "Restarting Filebeat..."
+sudo systemctl restart filebeat
+sleep 10
+
+echo "Restarting Kibana..."
+sudo systemctl restart kibana
+sleep 30
+
+# Verify all running
 for svc in elasticsearch logstash kibana filebeat; do
   echo -n "$svc: "
   sudo systemctl is-active $svc
 done
-
-# Verify Elasticsearch is responding
-curl -s http://localhost:9200 | python3 -m json.tool
 ```
 
 ---
 
-## Step 2 — Generate Real Attack Log Data
-
-We need actual log entries before we can visualize anything. Run these attacks to generate meaningful data:
-
-### Generate SSH Brute Force Logs (auth.log)
+## Step 7 — Verify Elasticsearch Has Data
 
 ```bash
-# Run Hydra against Metasploitable2 SSH
-# This generates MANY failed login entries in auth.log
-hydra -l msfadmin \
-      -P /usr/share/wordlists/rockyou.txt \
-      ssh://192.168.56.104 \
-      -t 4 -V \
-      -o /tmp/hydra-results.txt &
+# Wait 2 minutes after restart for logs to process
+sleep 120
 
-# Let it run for 2-3 minutes then stop it
-# Ctrl+C to stop
+# Check indices
+curl -s "http://localhost:9200/_cat/indices?v" | grep -E "logs-|health"
 
-# Check auth.log has entries
-sudo tail -30 /var/log/auth.log | grep "Failed\|Accepted"
+# Count auth documents
+curl -s "http://localhost:9200/logs-auth-*/_count" 2>/dev/null | python3 -m json.tool
+
+# Count apache documents
+curl -s "http://localhost:9200/logs-apache-*/_count" 2>/dev/null | python3 -m json.tool
 ```
 
-### Generate Web Attack Logs (apache2/access.log)
+---
+
+## Step 8 — If Logstash Still Not Working — Direct Push Method
+
+This method bypasses Logstash completely and pushes directly to Elasticsearch. **Use this if Logstash pipelines are not working.**
 
 ```bash
-# Make sure DVWA Apache is running on Metasploitable2 first
-# Then generate various attack patterns:
+# Push auth log events directly to Elasticsearch
+TODAY=$(date +%Y.%m.%d)
 
-# Normal traffic
-curl -s http://192.168.56.104/dvwa/ > /dev/null
-
-# SQL Injection attempts
-curl -s "http://192.168.56.104/dvwa/vulnerabilities/sqli/?id=1'+UNION+SELECT+user(),database()--+-&Submit=Submit" > /dev/null
-curl -s "http://192.168.56.104/dvwa/vulnerabilities/sqli/?id=1+OR+1=1--&Submit=Submit" > /dev/null
-curl -s "http://192.168.56.104/dvwa/vulnerabilities/sqli/?id=1'+ORDER+BY+2--+-&Submit=Submit" > /dev/null
-
-# XSS attempts
-curl -s "http://192.168.56.104/dvwa/vulnerabilities/xss_r/?name=<script>alert(1)</script>" > /dev/null
-
-# Path traversal / LFI
-curl -s "http://192.168.56.104/dvwa/vulnerabilities/fi/?page=../../../../../../etc/passwd" > /dev/null
-
-# Scanner simulation
-curl -s -A "Nikto/2.1.6" http://192.168.56.104/ > /dev/null
-curl -s -A "sqlmap/1.7" http://192.168.56.104/dvwa/ > /dev/null
-
-# Brute force login attempts
-for i in {1..20}; do
-  curl -s -X POST http://192.168.56.104/dvwa/login.php \
-    -d "username=admin&password=wrongpass$i&Login=Login" > /dev/null
+for i in $(seq 1 20); do
+  curl -s -X POST "http://localhost:9200/logs-auth-${TODAY}/_doc" \
+    -H 'Content-Type: application/json' \
+    -d "{
+      \"@timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+      \"event_type\": \"ssh_failed_login\",
+      \"src_ip\": \"192.168.56.101\",
+      \"failed_user\": \"msfadmin\",
+      \"severity\": \"high\",
+      \"hostname\": \"kali\",
+      \"program\": \"sshd\",
+      \"message\": \"Failed password for msfadmin from 192.168.56.101 port 4500${i} ssh2\"
+    }" > /dev/null
+  sleep 0.1
 done
 
-# Check apache logs have entries
-sudo tail -20 /var/log/apache2/access.log
-```
+# Push one successful login
+curl -s -X POST "http://localhost:9200/logs-auth-${TODAY}/_doc" \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"@timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+    \"event_type\": \"ssh_successful_login\",
+    \"src_ip\": \"192.168.56.101\",
+    \"success_user\": \"msfadmin\",
+    \"severity\": \"info\",
+    \"hostname\": \"kali\",
+    \"message\": \"Accepted password for msfadmin from 192.168.56.101 port 45021 ssh2\"
+  }" > /dev/null
 
-### Generate Nmap Scan Data
+# Push Apache attack events
+for attack in "possible_sqli_xss" "possible_sqli_xss" "path_traversal" "scanner_detected" "possible_sqli_xss"; do
+  curl -s -X POST "http://localhost:9200/logs-apache-${TODAY}/_doc" \
+    -H 'Content-Type: application/json' \
+    -d "{
+      \"@timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+      \"clientip\": \"192.168.56.101\",
+      \"attack_type\": \"${attack}\",
+      \"severity\": \"high\",
+      \"verb\": \"GET\",
+      \"request\": \"/dvwa/?id=1+UNION+SELECT+user(),database()\",
+      \"response\": 200,
+      \"bytes\": 1234,
+      \"agent\": \"Mozilla/5.0\"
+    }" > /dev/null
+  sleep 0.1
+done
 
-```bash
-# Run Nmap and save XML output (Logstash reads this)
-sudo nmap -sV -sC 192.168.56.104 \
-  -oX /root/nmap-lab-scan.xml \
-  -oN /root/nmap-lab-scan.txt
-
-# Verify XML was created
-ls -lh /root/nmap-lab-scan.xml
-cat /root/nmap-lab-scan.xml | head -20
+echo "Data pushed. Verifying..."
+sleep 5
+curl -s "http://localhost:9200/_cat/indices?v" | grep logs-
 ```
 
 ---
 
-## Step 3 — Verify Logstash is Processing
-
-```bash
-# Watch Logstash logs in real time
-sudo tail -f /var/log/logstash/logstash-plain.log
-
-# Look for lines like:
-# [INFO] Pipelines running: auth, apache
-# [INFO] Successfully started Logstash API endpoint
-
-# Test auth pipeline manually
-sudo /usr/share/logstash/bin/logstash \
-  --config.test_and_exit \
-  -f /etc/logstash/conf.d/auth-log.conf
-# Should output: Configuration OK
-
-# Test apache pipeline
-sudo /usr/share/logstash/bin/logstash \
-  --config.test_and_exit \
-  -f /etc/logstash/conf.d/apache-log.conf
-# Should output: Configuration OK
-```
-
----
-
-## Step 4 — Verify Data in Elasticsearch
-
-```bash
-# List all indices — you should see logs-auth-*, logs-apache-*
-curl -s "http://localhost:9200/_cat/indices?v&s=index"
-
-# Count documents in auth index
-curl -s "http://localhost:9200/logs-auth-*/_count" | python3 -m json.tool
-
-# Count documents in apache index
-curl -s "http://localhost:9200/logs-apache-*/_count" | python3 -m json.tool
-
-# Sample a document from auth index
-curl -s "http://localhost:9200/logs-auth-*/_search?size=1&pretty"
-
-# Search for failed SSH logins specifically
-curl -s -X GET "http://localhost:9200/logs-auth-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "match": {
-        "event_type": "ssh_failed_login"
-      }
-    },
-    "size": 5
-  }'
-
-# Search for attack events in Apache logs
-curl -s -X GET "http://localhost:9200/logs-apache-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "exists": {
-        "field": "attack_type"
-      }
-    },
-    "size": 5
-  }'
-```
-
----
-
-## Step 5 — Create Index Patterns in Kibana
-
-Index patterns tell Kibana which Elasticsearch indices to query.
-
-### Via Kibana UI
-
-```
-1. Open browser: http://localhost:5601
-2. Click hamburger menu (≡) → Stack Management
-3. Click "Index Patterns" (under Kibana section)
-4. Click "Create index pattern"
-
-Create these three patterns:
-
-Pattern 1: logs-auth-*
-  - Name: logs-auth-*
-  - Timestamp field: @timestamp
-  - Click Create
-
-Pattern 2: logs-apache-*
-  - Name: logs-apache-*
-  - Timestamp field: @timestamp
-  - Click Create
-
-Pattern 3: logs-nmap-*
-  - Name: logs-nmap-*
-  - Timestamp field: @timestamp
-  - Click Create
-
-Pattern 4: logs-* (catch-all)
-  - Name: logs-*
-  - Timestamp field: @timestamp
-  - Click Create
-```
-
-### Via API (faster)
-
-```bash
-# Create index pattern for auth logs
-curl -s -X POST "http://localhost:5601/api/saved_objects/index-pattern/logs-auth" \
-  -H 'kbn-xsrf: true' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "attributes": {
-      "title": "logs-auth-*",
-      "timeFieldName": "@timestamp"
-    }
-  }'
-
-# Create index pattern for apache logs
-curl -s -X POST "http://localhost:5601/api/saved_objects/index-pattern/logs-apache" \
-  -H 'kbn-xsrf: true' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "attributes": {
-      "title": "logs-apache-*",
-      "timeFieldName": "@timestamp"
-    }
-  }'
-```
-
----
-
-## Step 6 — Explore Data in Kibana Discover
+## Step 9 — Verify in Kibana
 
 ```
 1. Open http://localhost:5601
-2. Click hamburger menu → Discover
-3. Select index pattern: logs-auth-*
-4. Set time range: Last 24 hours (top right)
-5. You should see SSH log events
-
-Key fields to look for in auth logs:
-  event_type    ssh_failed_login or ssh_successful_login
-  src_ip        Source IP of login attempt
-  failed_user   Username that was tried
-  severity      medium or high
-  hostname      Target machine name
-
-6. Switch to logs-apache-*
-Key fields:
-  clientip      Source IP of web request
-  request       URL requested
-  response      HTTP response code
-  attack_type   possible_sqli_xss / path_traversal / scanner_detected
-  severity      high / medium
-  agent         User-Agent string
+2. Hamburger menu → Stack Management → Index Patterns
+3. Create index pattern: logs-auth-*  (timestamp: @timestamp)
+4. Create index pattern: logs-apache-* (timestamp: @timestamp)
+5. Hamburger menu → Discover
+6. Select logs-auth-* → set time to Last 7 days
+7. You should see events
 ```
 
-### Using KQL (Kibana Query Language) in Discover
+KQL queries to test:
 
 ```
-# Find all failed SSH logins
 event_type : "ssh_failed_login"
-
-# Find attacks from specific IP
-src_ip : "192.168.56.101"
-
-# Find all detected attacks in Apache
-attack_type : *
-
-# Find SQL injection attempts
-request : *UNION* or request : *SELECT*
-
-# Find scanner activity
-attack_type : "scanner_detected"
-
-# Find high severity events
 severity : "high"
-
-# Find events in time range (use UI time picker)
-# Or: @timestamp >= "2026-06-01" and @timestamp <= "2026-06-03"
+attack_type : *
+src_ip : "192.168.56.101"
 ```
 
 ---
 
-## Step 7 — Useful Elasticsearch API Queries
+## Complete Verification Checklist
 
 ```bash
-# Get field mapping for an index (see all available fields)
-curl -s "http://localhost:9200/logs-auth-*/_mapping?pretty" | head -60
+# Run all these — tick each one that works
+echo "=== 1. Services ==="
+for svc in elasticsearch logstash kibana filebeat; do
+  echo -n "  $svc: "; sudo systemctl is-active $svc
+done
 
-# Get unique values of a field (top source IPs)
-curl -s -X GET "http://localhost:9200/logs-auth-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "aggs": {
-      "top_source_ips": {
-        "terms": {
-          "field": "src_ip.keyword",
-          "size": 10
-        }
-      }
-    }
-  }'
+echo "=== 2. Auth Log ==="
+sudo wc -l /var/log/auth.log
 
-# Count failed logins per source IP
-curl -s -X GET "http://localhost:9200/logs-auth-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "query": {
-      "match": { "event_type": "ssh_failed_login" }
-    },
-    "aggs": {
-      "attacks_by_ip": {
-        "terms": {
-          "field": "src_ip.keyword",
-          "size": 10
-        }
-      }
-    }
-  }'
+echo "=== 3. Apache Log ==="
+sudo wc -l /var/log/apache2/access.log
 
-# Count attack types in Apache logs
-curl -s -X GET "http://localhost:9200/logs-apache-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "aggs": {
-      "attack_types": {
-        "terms": {
-          "field": "attack_type.keyword",
-          "size": 10
-        }
-      }
-    }
-  }'
+echo "=== 4. Elasticsearch Indices ==="
+curl -s "http://localhost:9200/_cat/indices?v" | grep logs-
+
+echo "=== 5. Auth Document Count ==="
+curl -s "http://localhost:9200/logs-auth-*/_count" 2>/dev/null
+
+echo "=== 6. Apache Document Count ==="
+curl -s "http://localhost:9200/logs-apache-*/_count" 2>/dev/null
 ```
+
+All 6 should show data. If indices show 0 or missing — use Step 8 Direct Push method.
 
 ---
 
-## Step 8 — Index Lifecycle Management (Optional)
+## Troubleshooting — Kali Specific
 
-For a real SIEM, you'd configure index lifecycle management to automatically roll over, compress, and delete old indices:
-
-```bash
-# Create a simple ILM policy
-curl -s -X PUT "http://localhost:9200/_ilm/policy/siem-policy" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "policy": {
-      "phases": {
-        "hot": {
-          "actions": {
-            "rollover": {
-              "max_size": "1gb",
-              "max_age": "7d"
-            }
-          }
-        },
-        "delete": {
-          "min_age": "30d",
-          "actions": {
-            "delete": {}
-          }
-        }
-      }
-    }
-  }'
-```
-
----
-
-## Troubleshooting Log Ingestion
-
-**No indices appearing in Elasticsearch:**
-
-```bash
-# Check Logstash pipeline is running
-sudo systemctl status logstash
-
-# Check for pipeline errors
-sudo grep -i "error\|exception" /var/log/logstash/logstash-plain.log | tail -20
-
-# Restart Logstash
-sudo systemctl restart logstash
-sleep 30
-curl "http://localhost:9200/_cat/indices?v"
-```
-
-**Auth log events not parsing correctly:**
-
-```bash
-# Test Grok pattern manually
-# Go to: http://localhost:5601 → Dev Tools → Grok Debugger
-# Or use online: https://grokdebug.herokuapp.com/
-
-# Sample auth.log line to test:
-# Jun  2 10:14:32 kali sshd[1234]: Failed password for msfadmin from 192.168.56.101 port 45678 ssh2
-
-# Grok pattern to test:
-# %{SYSLOGTIMESTAMP:timestamp} %{HOSTNAME:hostname} %{WORD:program}(?:\[%{POSINT:pid}\])?: %{GREEDYDATA:log_message}
-```
-
-**Apache logs not detecting attacks:**
-
-```bash
-# Check if attack patterns are in the logs
-grep -i "union\|select\|passwd" /var/log/apache2/access.log | tail -10
-
-# If empty — generate more attack traffic
-curl "http://192.168.56.104/dvwa/vulnerabilities/sqli/?id=1'+UNION+SELECT+1,2--+-"
-```
-
----
-
-## What Good Data Looks Like
-
-After completing today's steps, running this command:
-
-```bash
-curl -s "http://localhost:9200/_cat/indices?v&s=index"
-```
-
-Should show:
-
-```
-health  status  index                    docs.count  store.size
-green   open    logs-apache-2026.06.02   847         2.1mb
-green   open    logs-auth-2026.06.02     1234        1.8mb
-green   open    logs-nmap-2026.06.02     26          512kb
-```
-
-And in Kibana Discover — you should see events with fields like `event_type`, `src_ip`, `attack_type` properly parsed.
-
----
-
-## Practice Tasks
-
-1. Run Hydra for 3 minutes against SSH — confirm entries in `/var/log/auth.log`
-2. Run all the Apache attack curl commands — confirm entries in `/var/log/apache2/access.log`
-3. Run `curl "http://localhost:9200/_cat/indices?v"` — confirm indices exist
-4. Run the failed login count query — how many failed logins did Hydra generate?
-5. Run the attack type aggregation — what attack types were detected?
-6. Open Kibana Discover → `logs-auth-*` — find events with `event_type: ssh_failed_login`
-7. In Kibana Discover → `logs-apache-*` — filter by `attack_type: *` — list all attack types found
-8. In Kibana Discover — find the User-Agent `sqlmap` in Apache logs
-9. Run `sudo nmap -sV 192.168.56.104 -oX /root/nmap-scan.xml` — verify XML created
-10. Create all 4 index patterns in Kibana (logs-auth-*, logs-apache-*, logs-nmap-*, logs-*)
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `/var/log/auth.log` missing | rsyslog not configured | Step 1 above |
+| auth.log empty after setup | No SSH attempts made | Step 2 Method C (inject) |
+| Apache log missing | Apache not started | `sudo systemctl start apache2` |
+| Logstash no index created | Pipeline config error | Use Step 8 direct push |
+| Kibana no data | Wrong time range | Set to Last 7 days in Discover |
+| Filebeat not connecting | Logstash port 5044 not open | Check `sudo ss -tuln \| grep 5044` |
 
 ---
 
 ## Quick Reference
 
 ```
-VERIFY DATA FLOW                KQL QUERIES IN KIBANA
-curl localhost:9200/_cat/indices  event_type: "ssh_failed_login"
-curl localhost:9200/logs-auth-*/_count  attack_type: *
-                                severity: "high"
-GENERATE TEST DATA              src_ip: "192.168.56.101"
-hydra SSH (auth.log)            request: *UNION*
-curl attack URLs (apache)       agent: *nikto*
-nmap -oX (nmap index)
+KALI LOG LOCATIONS              GENERATE LOGS
+/var/log/auth.log               Method A: ssh wronguser@127.0.0.1
+/var/log/apache2/access.log     Method B: inject directly (Step 2C)
+/var/log/syslog                 Method C: curl attack URLs (Step 3)
+/root/nmap-*.xml                Method D: direct ES push (Step 8)
 
-ELASTICSEARCH APIS              LOGSTASH CONFIG PATH
-/_cat/indices?v                 /etc/logstash/conf.d/
-/_search?pretty                 auth-log.conf
-/_count                         apache-log.conf
-/_mapping                       nmap-log.conf
-/_cat/health                    beats-input.conf
+RESTART ORDER                   VERIFY COMMANDS
+1. elasticsearch (sleep 30)     curl localhost:9200/_cat/indices?v
+2. logstash (sleep 45)          curl localhost:9200/logs-auth-*/_count
+3. filebeat (sleep 10)          sudo tail -10 /var/log/auth.log
+4. kibana (sleep 30)            sudo tail -10 /var/log/apache2/access.log
 ```
 
 ---
@@ -493,9 +531,7 @@ ELASTICSEARCH APIS              LOGSTASH CONFIG PATH
 ## Resources
 
 - Kibana Query Language: https://www.elastic.co/guide/en/kibana/current/kuery-query.html
-- Elasticsearch Search API: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html
 - Grok Debugger: https://grokdebug.herokuapp.com/
-- Logstash Grok Filter: https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html
 - Defronix Academy | Mentor: Nitesh Singh Sir
 
 ---
