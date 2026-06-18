@@ -1,129 +1,270 @@
-# ApexPlanet-Cybersecurity-Internship-
+# 🛡️ ApexPlanet Cybersecurity Internship
 
-**Intern:** Shubham Chaurasiya
-**Domain:** Cybersecurity
-**Status:** In Progress
+> A hands-on cybersecurity internship journey focused on building practical skills in vulnerability assessment, security monitoring, SIEM operations, and incident response through real-world lab exercises and projects.
 
----
-
-## About This Repository
-
-This repository documents my complete journey through the **ApexPlanet Software Pvt. Ltd. Cybersecurity Internship**. Every task, every note, every hands-on lab is organized here — written in simple language so anyone learning cybersecurity can follow along.
-
-I'm sharing this publicly because learning in the open helps you grow faster and helps others who are on the same path.
+![GitHub stars](https://img.shields.io/github/stars/professorshubhx/ApexPlanet-Cybersecurity-Internship-?style=for-the-badge)
+![GitHub repo size](https://img.shields.io/github/repo-size/professorshubhx/ApexPlanet-Cybersecurity-Internship-?style=for-the-badge)
+![Cybersecurity](https://img.shields.io/badge/Domain-Cybersecurity-red?style=for-the-badge)
+![ELK Stack](https://img.shields.io/badge/SIEM-ELK%20Stack-blue?style=for-the-badge)
 
 ---
 
-## Repository Structure
+## 📖 About This Repository
 
-```
+This repository documents my journey through the **ApexPlanet Cybersecurity Internship**, where I worked on multiple hands-on projects covering offensive security, security monitoring, SIEM deployment, dashboard development, and incident response.
+
+The internship focused on bridging the gap between theoretical concepts and practical implementation by simulating real-world attack scenarios and investigating security events using industry-standard tools.
+
+---
+
+# 🎯 Internship Objectives
+
+- Develop practical cybersecurity skills.
+- Build and manage security labs.
+- Perform vulnerability assessments.
+- Monitor and analyze security logs.
+- Detect suspicious activities.
+- Investigate security incidents.
+- Gain experience with SIEM technologies.
+- Produce professional security documentation.
+
+---
+
+# 🛠️ Technologies & Tools Used
+
+| Category | Tools |
+|-----------|---------|
+| Operating Systems | Kali Linux, Metasploitable 2 |
+| Reconnaissance | Nmap |
+| Web Security | DVWA |
+| SIEM | Elasticsearch, Logstash, Kibana |
+| Log Collection | Filebeat |
+| Virtualization | VirtualBox |
+| Documentation | Markdown, GitHub |
+| Monitoring | Kibana Dashboards |
+
+---
+
+# 📂 Repository Structure
+
+```text
 ApexPlanet-Cybersecurity-Internship/
 │
-├── Task-01-Foundation-and-Environment-Setup/
-│   ├── Day-01-Cybersecurity-Basics.md
-│   ├── Day-02-Lab-Environment-Setup.md
-│   ├── Day-03-Linux-Fundamentals.md
-│   ├── Day-04-Networking-Basics.md
-│   ├── Day-05-Cryptography-Basics.md
-│   ├── Day-06-Tool-Familiarization.md
-│   ├── Linux-Cheatsheet.md
-│   ├── Lab-Setup-Report.md
+├── Task-01-....................
+│   ├── README.md
 │   └── screenshots/
 │
-├── Task-02/ (coming soon)
-├── Task-03/ (coming soon)
-├── Task-04/ (coming soon)
-├── Task-05/ (coming soon)
+├── Task-02-....................
+│   ├── README.md
+│   └── screenshots/
 │
-└── README.md
+├── Task-03-....................
+│   ├── README.md
+│   └── screenshots/
+│
+├── Task-04-....................
+│   ├── README.md
+│   └── screenshots/
+│
+└── Task-05-Capstone-Incident-Response/
+    ├── README.md
+    ├── Day-24-Project-Planning.md
+    ├── Day-25-ELK-Stack-Setup.md
+    ├── Day-26-Log-Ingestion.md
+    ├── Day-27-SIEM-Dashboards.md
+    ├── Day-28-Incident-Response.md
+    ├── Day-29-Final-Documentation.md
+    ├── Capstone-Project-Report.md
+    ├── Post-Incident-Report.md
+    ├── network-diagram.md
+    └── screenshots/
 ```
 
 ---
 
-## Task Progress
+# 🚀 Internship Tasks
 
-| Task | Title | Status |
-|------|-------|--------|
-| Task 1 | Foundation & Environment Setup | ✅ Complete |
-| Task 2 | TBA | ⏳ Not Started |
-| Task 3 | TBA | ⏳ Not Started |
-| Task 4 | TBA | ⏳ Not Started |
-| Task 5 | TBA | ⏳ Not Started |
+## ✅ Task 01 – Security Lab Setup
 
----
+Designed and deployed an isolated cybersecurity lab environment for safe testing and experimentation.
 
-## Task 1 — Foundation & Environment Setup (Days 1–12)
+### Activities
 
-**Objective:** Build strong fundamentals in cybersecurity, networking, cryptography and set up a professional hacking lab.
+- Installed Kali Linux.
+- Deployed Metasploitable 2.
+- Configured Host-Only networking.
+- Verified connectivity between systems.
+- Created a controlled testing environment.
 
-| Day | Topic | Status |
-|-----|-------|--------|
-| Day 01 | Cybersecurity Basics — CIA Triad, Threat Types, Attack Vectors | ✅ Done |
-| Day 02 | Lab Environment Setup — VirtualBox, Kali Linux, Metasploitable2 | ✅ Done |
-| Day 03 | Linux Fundamentals — Navigation, Permissions, Networking Commands | ✅ Done |
-| Day 04 | Networking Basics — OSI Model, TCP/IP, DNS, Subnetting, NAT | ✅ Done |
-| Day 05 | Cryptography Basics — Encryption, Hashing, SSL/TLS, OpenSSL | ✅ Done |
-| Day 06 | Tool Familiarization — Wireshark, Nmap, Burp Suite, Netcat | ✅ Done |
-| Days 07–12 | Labs, Practice & Deliverables | ✅ Done |
+### Skills Gained
 
-**Deliverables:**
-- [x] Lab Setup Report
-- [x] Linux Cheatsheet
-- [ ] 5-min Video Walkthrough
+- Virtualization
+- Network Configuration
+- Linux Administration
+- Lab Design
+
+➡️ **Documentation:** `Task-01/README.md`
 
 ---
 
-## Lab Environment
+## ✅ Task 02 – Vulnerability Assessment & Reconnaissance
 
-| Component | Details |
-|-----------|---------|
-| Hypervisor | VirtualBox |
-| Attacker Machine | Kali Linux (Rolling) |
-| Target Machine | Metasploitable2 |
-| Web App Target | DVWA (on Metasploitable2) |
-| Network | Host-Only — 192.168.56.0/24 |
-| Tools | Nmap, Wireshark, Burp Suite, Netcat, OpenSSL |
+Performed reconnaissance and vulnerability discovery against the target environment.
 
----
+### Activities
 
-## Topics Covered So Far
+- Conducted Nmap scans.
+- Identified open ports.
+- Enumerated services.
+- Gathered service banners.
+- Documented findings.
 
-- CIA Triad and core security concepts
-- Common attack types — Phishing, Malware, DDoS, SQLi, Ransomware, Brute Force
-- Attack vectors — Social Engineering, Wireless Attacks, Insider Threats
-- Linux file system, permissions, networking commands, log analysis
-- OSI Model and TCP/IP protocol suite
-- IP addressing, subnetting, NAT, DNS, HTTP/HTTPS
-- Symmetric and asymmetric encryption, hashing, digital certificates
-- SSL/TLS handshake and cipher suites
-- Wireshark packet capture and analysis
-- Nmap scanning and NSE scripting
-- Burp Suite web proxy and request manipulation
-- Netcat for banner grabbing, file transfer, and reverse shells
+### Skills Gained
+
+- Network Scanning
+- Enumeration
+- Reconnaissance
+- Service Fingerprinting
+
+➡️ **Documentation:** `Task-02/README.md`
 
 ---
 
-## My Learning Stack
+## ✅ Task 03 – Web Application Security
 
-| | |
-|--|--|
-| Internship | ApexPlanet Software Pvt. Ltd. |
-| Academy | Defronix Cybersecurity Academy |
-| Mentor | Nitesh Singh Sir |
-| Current Goal | SOC L1 Analyst Role |
-| Parallel Learning | Bug Bounty Hunting |
+Analyzed and tested a deliberately vulnerable web application.
+
+### Activities
+
+- Worked with DVWA.
+- Identified common web vulnerabilities.
+- Performed controlled security testing.
+- Observed web server logs.
+- Investigated scanner activity.
+
+### Skills Gained
+
+- Web Application Security
+- Vulnerability Analysis
+- HTTP Log Analysis
+- Secure Testing Practices
+
+➡️ **Documentation:** `Task-03/README.md`
 
 ---
 
-## Connect With Me
+## ✅ Task 04 – Authentication Monitoring
 
-- **LinkedIn:** [Professorshubhx](https://linkedin.com/in/shubham-chaurasiya-60932a359/)
-- **Githubh:** [@professorshubhx](https://github.com/p/professorshubhx)
+Implemented authentication monitoring and security event analysis.
+
+### Activities
+
+- Collected authentication logs.
+- Simulated failed login attempts.
+- Identified targeted usernames.
+- Detected brute-force behavior.
+- Built authentication dashboards.
+
+### Skills Gained
+
+- Log Analysis
+- Threat Detection
+- Security Monitoring
+- Authentication Analysis
+
+➡️ **Documentation:** `Task-04/README.md`
 
 ---
 
-> *"Security is not a product, it's a process."* — Bruce Schneier
+## ✅ Task 05 – Capstone Incident Response Project
+
+Built a mini Security Operations Center (SOC) using the ELK Stack to investigate security incidents.
+
+### Activities
+
+- Deployed ELK Stack.
+- Configured Filebeat and Logstash.
+- Ingested multiple log sources.
+- Built SIEM dashboards.
+- Investigated suspicious events.
+- Produced professional reports.
+
+### Skills Gained
+
+- SIEM Operations
+- Incident Response
+- Dashboard Development
+- Threat Hunting
+- Technical Reporting
+
+➡️ **Documentation:** `Task-05-Capstone-Incident-Response/README.md`
 
 ---
 
-*If this repo helped you in any way, consider giving it a star. It means a lot.*
+# 📊 Key Achievements
+
+✔ Built a complete cybersecurity lab.
+
+✔ Performed vulnerability assessments.
+
+✔ Conducted reconnaissance activities.
+
+✔ Investigated web application events.
+
+✔ Monitored authentication activities.
+
+✔ Developed multiple Kibana dashboards.
+
+✔ Built a functioning ELK-based SIEM.
+
+✔ Performed incident investigation and reporting.
+
+✔ Produced professional cybersecurity documentation.
+
+---
+
+# 📚 Learning Outcomes
+
+Through this internship, I gained hands-on experience in:
+
+- Security Operations Center (SOC) workflows.
+- SIEM deployment and management.
+- Security event monitoring.
+- Threat detection methodologies.
+- Incident investigation techniques.
+- Security documentation standards.
+- Practical cybersecurity problem-solving.
+
+---
+
+# 🏆 Highlights
+
+- 🔍 Reconnaissance using Nmap.
+- 🌐 DVWA security testing.
+- 📈 Interactive Kibana dashboards.
+- 📦 Centralized log management.
+- 🚨 Incident response investigation.
+- 📑 Professional reporting.
+
+---
+
+# 👨‍💻 About Me
+
+## Shubham Chaurasiya
+
+BCA Student | Cybersecurity Enthusiast | SOC Analyst Aspirant
+
+I am passionate about cybersecurity and continuously work on hands-on projects to strengthen my skills in security operations, SIEM technologies, threat detection, and incident response.
+
+### Connect With Me
+
+- GitHub: https://github.com/professorshubhx
+- LinkedIn: https://www.linkedin.com/in/shubham-chaurasiya-60932a359/
+
+---
+
+# ⭐ Acknowledgement
+
+This repository represents my practical learning journey during the **ApexPlanet Cybersecurity Internship Program**. Each task contributed to building a stronger foundation in cybersecurity operations and prepared me for future roles in Security Operations Centers (SOCs).
+
+If you found this repository helpful or interesting, consider giving it a ⭐ to support my work.
